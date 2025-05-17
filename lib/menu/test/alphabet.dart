@@ -49,9 +49,9 @@ class _AlphabetPageState extends State<AlphabetPage> {
     try {
       interpreter = await Interpreter.fromAsset(
           'assets/model/mobilenet_v2_sibi_classification.tflite');
-      debugPrint('Success Load Model');
+      debugPrint('Model berhasil dimuat');
     } catch (e) {
-      debugPrint("Error loading model: $e");
+      debugPrint("Gagal memuat model: $e");
     }
   }
 
@@ -64,6 +64,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
     img.Image? oriImage = img.decodeImage(bytes);
     if (oriImage == null) return;
 
+    // Preprocessing
     int w = oriImage.width;
     int h = oriImage.height;
     int cropSize = min(w, h);
@@ -71,7 +72,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
     int startY = (h - cropSize) ~/ 2;
     img.Image cropped =
         img.copyCrop(oriImage, startX, startY, cropSize, cropSize);
-
     img.Image resized = img.copyResize(cropped, width: 224, height: 224);
 
     Float32List input = Float32List(224 * 224 * 3);
@@ -86,7 +86,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
     }
 
     var inputTensor = input.reshape([1, 224, 224, 3]);
-    var outputTensor = List.filled(1 * 36, 0.0).reshape([1, 36]);
+    var outputTensor = List.filled(36, 0.0).reshape([1, 36]);
 
     interpreter?.run(inputTensor, outputTensor);
 
@@ -159,16 +159,28 @@ class _AlphabetPageState extends State<AlphabetPage> {
   }
 
   @override
+  void dispose() {
+    _controller?.dispose();
+    interpreter?.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Belajar Abjad')),
+      appBar: AppBar(
+        title: const Text('Belajar Abjad'),
+        backgroundColor: Colors.orange,
+        centerTitle: true,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Soal
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -207,6 +219,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
               ],
             ),
             const SizedBox(height: 24),
+
+            // Kamera
             _isCameraInitialized
                 ? Container(
                     width: screenWidth * 0.9,
@@ -225,7 +239,10 @@ class _AlphabetPageState extends State<AlphabetPage> {
                     height: screenHeight * 0.5,
                     child: const Center(child: CircularProgressIndicator()),
                   ),
+
             const SizedBox(height: 12),
+
+            // Tombol Flash & Capture
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -237,7 +254,9 @@ class _AlphabetPageState extends State<AlphabetPage> {
                     shape: const StadiumBorder(),
                   ),
                   child: Text(
-                    _flashMode == FlashMode.torch ? 'Matikan Flash' : 'Nyalakan Flash',
+                    _flashMode == FlashMode.torch
+                        ? 'Matikan Flash'
+                        : 'Nyalakan Flash',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -246,7 +265,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
                   onPressed: takePictureAndClassify,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12, horizontal: 24),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
@@ -258,7 +278,10 @@ class _AlphabetPageState extends State<AlphabetPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
+
+            // Navigasi Abjad
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
