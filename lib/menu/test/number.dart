@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
+import 'package:google_fonts/google_fonts.dart';
 
 class NumberPage extends StatefulWidget {
   const NumberPage({super.key});
@@ -18,10 +19,8 @@ class _NumberPageState extends State<NumberPage> {
   bool _isCameraInitialized = false;
   Interpreter? interpreter;
 
-  final List<String> _numbers =
-    List.generate(10, (index) => index.toString());
-String _currentNumber = '0';
-  // final Random _random = Random();
+  final List<String> _numbers = List.generate(10, (index) => index.toString());
+  String _currentNumber = '0';
 
   @override
   void initState() {
@@ -57,16 +56,14 @@ String _currentNumber = '0';
   Future<void> takePictureAndClassify() async {
     if (_controller == null || !(_controller!.value.isInitialized)) return;
 
-    await _controller!.setFlashMode(FlashMode.always);
+    await _controller!.setFlashMode(FlashMode.off);
 
     final image = await _controller!.takePicture();
     final bytes = await image.readAsBytes();
 
-    // Decode with image package
     img.Image? oriImage = img.decodeImage(bytes);
     if (oriImage == null) return;
 
-    // Optional crop tengah (biar fokus ke tangan)
     int w = oriImage.width;
     int h = oriImage.height;
     int cropSize = min(w, h);
@@ -75,10 +72,8 @@ String _currentNumber = '0';
     img.Image cropped =
         img.copyCrop(oriImage, startX, startY, cropSize, cropSize);
 
-    // Resize to 224x224
     img.Image resized = img.copyResize(cropped, width: 224, height: 224);
 
-    // Normalize and reshape
     Float32List input = Float32List(224 * 224 * 3);
     int index = 0;
     for (int y = 0; y < 224; y++) {
@@ -90,33 +85,22 @@ String _currentNumber = '0';
       }
     }
 
-    // Input tensor shape: [1, 224, 224, 3]
     var inputTensor = input.reshape([1, 224, 224, 3]);
     var outputTensor = List.filled(1 * 36, 0.0).reshape([1, 36]);
 
     interpreter?.run(inputTensor, outputTensor);
 
-    debugPrint(outputTensor.toString());
-
     List<double> scores = List<double>.from(outputTensor[0]);
     double maxScore = scores.reduce(max);
     int labelIndex = scores.indexOf(maxScore);
-
-    debugPrint(labelIndex.toString());
-
     String predictedLabel =
         '0123456789abcdefghijklmnopqrstuvwxyz'[labelIndex].toUpperCase();
 
-    debugPrint(predictedLabel);
-
     if (predictedLabel == _currentNumber) {
       showResultDialog(true, 'Jawaban benar: $predictedLabel');
-      // setState(() {
-      //   _currentNumber = _numbers[_random.nextInt(_numbers.length)];
-      // });
     } else {
-      showResultDialog(
-          false, 'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
+      showResultDialog(false,
+          'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
     }
   }
 
@@ -125,9 +109,8 @@ String _currentNumber = '0';
       context: context,
       barrierDismissible: true,
       builder: (_) => AlertDialog(
-        backgroundColor: isCorrect
-            ? Colors.green.withOpacity(0.5)
-            : Colors.red.withOpacity(0.5),
+        backgroundColor:
+            isCorrect ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 290),
         content: SizedBox(
@@ -135,7 +118,7 @@ String _currentNumber = '0';
           child: Center(
             child: Text(
               message,
-              style: const TextStyle(
+              style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -148,34 +131,53 @@ String _currentNumber = '0';
     );
   }
 
-  // void _showRandomAlphabet() {
-  //   setState(() {
-  //     _currentNumber = _numbers[_random.nextInt(_numbers.length)];
-  //   });
-  // }
-
   void _showNextNumber() {
-  final currentIndex = _numbers.indexOf(_currentNumber);
-  if (currentIndex < _numbers.length - 1) {
-    setState(() {
-      _currentNumber = _numbers[currentIndex + 1];
-    });
+    final currentIndex = _numbers.indexOf(_currentNumber);
+    if (currentIndex < _numbers.length - 1) {
+      setState(() {
+        _currentNumber = _numbers[currentIndex + 1];
+      });
+    }
   }
-}
 
-void _showPreviousNumber() {
-  final currentIndex = _numbers.indexOf(_currentNumber);
-  if (currentIndex > 0) {
-    setState(() {
-      _currentNumber = _numbers[currentIndex - 1];
-    });
+  void _showPreviousNumber() {
+    final currentIndex = _numbers.indexOf(_currentNumber);
+    if (currentIndex > 0) {
+      setState(() {
+        _currentNumber = _numbers[currentIndex - 1];
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Belajar Angka')),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'Test Angka',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: false,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+        ),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -184,35 +186,38 @@ void _showPreviousNumber() {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFB9EE1B), Color(0xFFC93737)],
+                    ),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 4)
-                    ],
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                   ),
+                  alignment: Alignment.center,
                   child: Text(
                     _currentNumber,
-                    style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange),
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.green.shade600,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
+                  child: Text(
                     "Soal",
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 )
               ],
@@ -220,8 +225,8 @@ void _showPreviousNumber() {
             const SizedBox(height: 24),
             _isCameraInitialized
                 ? Container(
-                    width: 250,
-                    height: 250,
+                    width: 350,
+                    height: 350,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.black,
@@ -232,8 +237,8 @@ void _showPreviousNumber() {
                     ),
                   )
                 : const SizedBox(
-                    width: 250,
-                    height: 250,
+                    width: 300,
+                    height: 300,
                     child: Center(child: CircularProgressIndicator()),
                   ),
             const SizedBox(height: 12),
@@ -245,18 +250,19 @@ void _showPreviousNumber() {
                   backgroundColor: Colors.purple,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text(
+                child: Text(
                   'Ambil Gambar',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-
-            // Tombol panah
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

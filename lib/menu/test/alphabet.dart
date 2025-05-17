@@ -167,7 +167,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              'Belajar Abjad',
+              'Test Abjad',
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -188,11 +188,11 @@ class _AlphabetPageState extends State<AlphabetPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 100,
-                  height: 80,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
+                      colors: [Color.fromARGB(255, 185, 238, 27), Color.fromARGB(255, 201, 55, 55)],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: const [
@@ -203,7 +203,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
                   child: Text(
                     _currentAlphabet,
                     style: GoogleFonts.poppins(
-                      fontSize: 40,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -230,8 +230,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
             // Kotak kamera diperbesar
             _isCameraInitialized
                 ? Container(
-                    width: 300,
-                    height: 300,
+                    width: 350,
+                    height: 350,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.black,
@@ -242,8 +242,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
                     ),
                   )
                 : const SizedBox(
-                    width: 300,
-                    height: 300,
+                    width: 350,
+                    height: 350,
                     child: Center(child: CircularProgressIndicator()),
                   ),
 
