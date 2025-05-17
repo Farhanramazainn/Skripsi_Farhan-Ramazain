@@ -57,7 +57,7 @@ String _currentNumber = '0';
   Future<void> takePictureAndClassify() async {
     if (_controller == null || !(_controller!.value.isInitialized)) return;
 
-    await _controller!.setFlashMode(FlashMode.off);
+    await _controller!.setFlashMode(FlashMode.always);
 
     final image = await _controller!.takePicture();
     final bytes = await image.readAsBytes();
