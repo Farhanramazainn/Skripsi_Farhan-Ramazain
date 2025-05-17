@@ -48,7 +48,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
     try {
       interpreter = await Interpreter.fromAsset(
           'assets/model/mobilenet_v2_sibi_classification.tflite');
-
       debugPrint('Success Load Model');
     } catch (e) {
       debugPrint("Error loading model: $e");
@@ -95,15 +94,13 @@ class _AlphabetPageState extends State<AlphabetPage> {
     List<double> scores = List<double>.from(outputTensor[0]);
     double maxScore = scores.reduce(max);
     int labelIndex = scores.indexOf(maxScore);
-
     String predictedLabel =
         '0123456789abcdefghijklmnopqrstuvwxyz'[labelIndex].toUpperCase();
 
     if (predictedLabel == _currentAlphabet) {
       showResultDialog(true, 'Jawaban benar: $predictedLabel');
     } else {
-      showResultDialog(
-          false, 'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
+      showResultDialog(false, 'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
     }
   }
 
@@ -156,20 +153,43 @@ class _AlphabetPageState extends State<AlphabetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Test Abjad', style: GoogleFonts.poppins()),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'Belajar Abjad',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: false,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+        ),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Gradasi kotak huruf
+            // Header huruf soal dengan gradasi
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  width: 100,
+                  height: 80,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
@@ -179,10 +199,11 @@ class _AlphabetPageState extends State<AlphabetPage> {
                       BoxShadow(color: Colors.black12, blurRadius: 4)
                     ],
                   ),
+                  alignment: Alignment.center,
                   child: Text(
                     _currentAlphabet,
                     style: GoogleFonts.poppins(
-                      fontSize: 32,
+                      fontSize: 40,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -190,8 +211,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.green.shade600,
                     borderRadius: BorderRadius.circular(8),
@@ -204,13 +224,14 @@ class _AlphabetPageState extends State<AlphabetPage> {
                 )
               ],
             ),
+
             const SizedBox(height: 24),
 
-            // Kamera diperbesar
+            // Kotak kamera diperbesar
             _isCameraInitialized
                 ? Container(
-                    width: 350,
-                    height: 350,
+                    width: 300,
+                    height: 300,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.black,
@@ -221,11 +242,14 @@ class _AlphabetPageState extends State<AlphabetPage> {
                     ),
                   )
                 : const SizedBox(
-                    width: 350,
-                    height: 350,
+                    width: 300,
+                    height: 300,
                     child: Center(child: CircularProgressIndicator()),
                   ),
+
             const SizedBox(height: 12),
+
+            // Tombol ambil gambar
             SizedBox(
               width: 250,
               child: ElevatedButton(
@@ -243,9 +267,10 @@ class _AlphabetPageState extends State<AlphabetPage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 24),
 
-            // Tombol navigasi abjad
+            // Tombol navigasi huruf
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
