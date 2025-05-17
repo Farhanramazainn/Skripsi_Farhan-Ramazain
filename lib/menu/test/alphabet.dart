@@ -17,11 +17,11 @@ class _AlphabetPageState extends State<AlphabetPage> {
   CameraController? _controller;
   bool _isCameraInitialized = false;
   Interpreter? interpreter;
+  FlashMode _flashMode = FlashMode.off;
 
   final List<String> _alphabets =
       List.generate(26, (index) => String.fromCharCode(65 + index));
   String _currentAlphabet = 'A';
-  // final Random _random = Random();
 
   @override
   void initState() {
@@ -36,8 +36,9 @@ class _AlphabetPageState extends State<AlphabetPage> {
       (camera) => camera.lensDirection == CameraLensDirection.back,
     );
 
-    _controller = CameraController(backCamera, ResolutionPreset.medium);
+    _controller = CameraController(backCamera, ResolutionPreset.max);
     await _controller!.initialize();
+    await _controller!.setFlashMode(_flashMode);
 
     setState(() {
       _isCameraInitialized = true;
@@ -48,7 +49,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
     try {
       interpreter = await Interpreter.fromAsset(
           'assets/model/mobilenet_v2_sibi_classification.tflite');
-
       debugPrint('Success Load Model');
     } catch (e) {
       debugPrint("Error loading model: $e");
@@ -58,16 +58,12 @@ class _AlphabetPageState extends State<AlphabetPage> {
   Future<void> takePictureAndClassify() async {
     if (_controller == null || !(_controller!.value.isInitialized)) return;
 
-    await _controller!.setFlashMode(FlashMode.off);
-
     final image = await _controller!.takePicture();
     final bytes = await image.readAsBytes();
 
-    // Decode with image package
     img.Image? oriImage = img.decodeImage(bytes);
     if (oriImage == null) return;
 
-    // Optional crop tengah (biar fokus ke tangan)
     int w = oriImage.width;
     int h = oriImage.height;
     int cropSize = min(w, h);
@@ -76,10 +72,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
     img.Image cropped =
         img.copyCrop(oriImage, startX, startY, cropSize, cropSize);
 
-    // Resize to 224x224
     img.Image resized = img.copyResize(cropped, width: 224, height: 224);
 
-    // Normalize and reshape
     Float32List input = Float32List(224 * 224 * 3);
     int index = 0;
     for (int y = 0; y < 224; y++) {
@@ -91,33 +85,23 @@ class _AlphabetPageState extends State<AlphabetPage> {
       }
     }
 
-    // Input tensor shape: [1, 224, 224, 3]
     var inputTensor = input.reshape([1, 224, 224, 3]);
     var outputTensor = List.filled(1 * 36, 0.0).reshape([1, 36]);
 
     interpreter?.run(inputTensor, outputTensor);
 
-    debugPrint(outputTensor.toString());
-
     List<double> scores = List<double>.from(outputTensor[0]);
     double maxScore = scores.reduce(max);
     int labelIndex = scores.indexOf(maxScore);
 
-    debugPrint(labelIndex.toString());
-
     String predictedLabel =
         '0123456789abcdefghijklmnopqrstuvwxyz'[labelIndex].toUpperCase();
 
-    debugPrint(predictedLabel);
-
     if (predictedLabel == _currentAlphabet) {
       showResultDialog(true, 'Jawaban benar: $predictedLabel');
-      // setState(() {
-      //   _currentAlphabet = _alphabets[_random.nextInt(_alphabets.length)];
-      // });
     } else {
       showResultDialog(
-          false, 'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
+          false, 'Mohon ulangi,\nJawaban Anda adalah $predictedLabel');
     }
   }
 
@@ -149,12 +133,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
     );
   }
 
-  // void _showRandomAlphabet() {
-  //   setState(() {
-  //     _currentAlphabet = _alphabets[_random.nextInt(_alphabets.length)];
-  //   });
-  // }
-
   void _showNextAlphabet() {
     final currentIndex = _alphabets.indexOf(_currentAlphabet);
     if (currentIndex < _alphabets.length - 1) {
@@ -173,8 +151,18 @@ class _AlphabetPageState extends State<AlphabetPage> {
     }
   }
 
+  void _toggleFlash() async {
+    if (_controller == null) return;
+    _flashMode = _flashMode == FlashMode.off ? FlashMode.torch : FlashMode.off;
+    await _controller!.setFlashMode(_flashMode);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Belajar Abjad')),
       body: Center(
@@ -221,8 +209,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
             const SizedBox(height: 24),
             _isCameraInitialized
                 ? Container(
-                    width: 250,
-                    height: 250,
+                    width: screenWidth * 0.9,
+                    height: screenHeight * 0.5,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.black,
@@ -232,32 +220,45 @@ class _AlphabetPageState extends State<AlphabetPage> {
                       child: CameraPreview(_controller!),
                     ),
                   )
-                : const SizedBox(
-                    width: 250,
-                    height: 250,
-                    child: Center(child: CircularProgressIndicator()),
+                : SizedBox(
+                    width: screenWidth * 0.9,
+                    height: screenHeight * 0.5,
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: 250,
-              child: ElevatedButton(
-                onPressed: takePictureAndClassify,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _toggleFlash,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        _flashMode == FlashMode.torch ? Colors.red : Colors.grey,
+                    shape: const StadiumBorder(),
+                  ),
+                  child: Text(
+                    _flashMode == FlashMode.torch ? 'Matikan Flash' : 'Nyalakan Flash',
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
-                child: const Text(
-                  'Ambil Gambar',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: takePictureAndClassify,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text(
+                    'Ambil Gambar',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 24),
-
-            // Tombol panah
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

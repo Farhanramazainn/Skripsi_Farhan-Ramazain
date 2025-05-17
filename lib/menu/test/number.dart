@@ -48,7 +48,6 @@ String _currentNumber = '0';
     try {
       interpreter = await Interpreter.fromAsset(
           'assets/model/mobilenet_v2_sibi_classification.tflite');
-
       debugPrint('Success Load Model');
     } catch (e) {
       debugPrint("Error loading model: $e");
