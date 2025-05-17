@@ -35,7 +35,7 @@ class _NumberPageState extends State<NumberPage> {
       (camera) => camera.lensDirection == CameraLensDirection.back,
     );
 
-    _controller = CameraController(backCamera, ResolutionPreset.medium);
+    _controller = CameraController(backCamera, ResolutionPreset.ultraHigh);
     await _controller!.initialize();
 
     setState(() {
