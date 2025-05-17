@@ -39,6 +39,14 @@ class _AlphabetPageState extends State<AlphabetPage> {
     _controller = CameraController(backCamera, ResolutionPreset.ultraHigh);
     await _controller!.initialize();
 
+    if (_controller!.value.flashMode != FlashMode.torch) {
+      try {
+        await _controller!.setFlashMode(FlashMode.torch);
+      } catch (e) {
+        debugPrint('Flash mode error: $e');
+      }
+    }
+
     setState(() {
       _isCameraInitialized = true;
     });
@@ -56,8 +64,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
 
   Future<void> takePictureAndClassify() async {
     if (_controller == null || !(_controller!.value.isInitialized)) return;
-
-    await _controller!.setFlashMode(FlashMode.off);
 
     final image = await _controller!.takePicture();
     final bytes = await image.readAsBytes();
@@ -183,7 +189,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Header huruf soal dengan gradasi
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -227,7 +232,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
 
             const SizedBox(height: 24),
 
-            // Kotak kamera diperbesar
             _isCameraInitialized
                 ? Container(
                     width: 350,
@@ -249,7 +253,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
 
             const SizedBox(height: 12),
 
-            // Tombol ambil gambar
             SizedBox(
               width: 250,
               child: ElevatedButton(
@@ -270,7 +273,6 @@ class _AlphabetPageState extends State<AlphabetPage> {
 
             const SizedBox(height: 24),
 
-            // Tombol navigasi huruf
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
