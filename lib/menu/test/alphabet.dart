@@ -36,7 +36,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
       (camera) => camera.lensDirection == CameraLensDirection.back,
     );
 
-    _controller = CameraController(backCamera, ResolutionPreset.medium);
+    _controller = CameraController(backCamera, ResolutionPreset.ultraHigh);
     await _controller!.initialize();
 
     setState(() {
