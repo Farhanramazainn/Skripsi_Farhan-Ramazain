@@ -18,33 +18,40 @@ class _NumberPageState extends State<NumberPage> {
   CameraController? _controller;
   bool _isCameraInitialized = false;
   Interpreter? interpreter;
+  int _selectedCameraIndex = 0;
 
   final List<String> _numbers =
-      List.generate(10, (index) => String.fromCharCode(65 + index));
-  String _currentNumber = '0';
+      List.generate(10, (index) => index.toString());
+  int _currentIndex = 0;
+  int _score = 0;
+
+  String get _currentNumber => _numbers[_currentIndex];
 
   @override
   void initState() {
     super.initState();
-    initializeCamera();
     loadModel();
+    initCameras();
   }
 
-  Future<void> initializeCamera() async {
+  Future<void> initCameras() async {
     _cameras = await availableCameras();
-    final backCamera = _cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.back,
+    if (_cameras.isNotEmpty) {
+      _initializeCamera(_selectedCameraIndex);
+    }
+  }
+
+  Future<void> _initializeCamera(int cameraIndex) async {
+    _controller = CameraController(
+      _cameras[cameraIndex],
+      ResolutionPreset.ultraHigh,
+      enableAudio: false,
     );
 
-    _controller = CameraController(backCamera, ResolutionPreset.ultraHigh);
-    await _controller!.initialize();
-
-    if (_controller!.value.flashMode != FlashMode.torch) {
-      try {
-        await _controller!.setFlashMode(FlashMode.torch);
-      } catch (e) {
-        debugPrint('Flash mode error: $e');
-      }
+    try {
+      await _controller!.initialize();
+    } catch (e) {
+      debugPrint("Camera init error: $e");
     }
 
     setState(() {
@@ -55,16 +62,16 @@ class _NumberPageState extends State<NumberPage> {
   Future<void> loadModel() async {
     try {
       interpreter = await Interpreter.fromAsset(
-          'assets/model/mobilenet_v2_sibi_num.tflite'
-          );
-      debugPrint('Success Load Model');
+        'assets/model/mobilenet_v2_sibi_classification.tflite',
+      );
+      debugPrint('Model loaded');
     } catch (e) {
       debugPrint("Error loading model: $e");
     }
   }
 
   Future<void> takePictureAndClassify() async {
-    if (_controller == null || !(_controller!.value.isInitialized)) return;
+    if (_controller == null || !_controller!.value.isInitialized) return;
 
     final image = await _controller!.takePicture();
     final bytes = await image.readAsBytes();
@@ -79,7 +86,22 @@ class _NumberPageState extends State<NumberPage> {
     int startY = (h - cropSize) ~/ 2;
     img.Image cropped =
         img.copyCrop(oriImage, startX, startY, cropSize, cropSize);
+      // Deteksi warna kulit (sederhana) dan blok warna lain jadi hitam
+  for (int y = 0; y < cropped.height; y++) {
+    for (int x = 0; x < cropped.width; x++) {
+      int pixel = cropped.getPixel(x, y);
+      int r = img.getRed(pixel);
+      int g = img.getGreen(pixel);
+      int b = img.getBlue(pixel);
 
+      // Range sederhana untuk warna kulit (bisa dituning)
+      if (!(r > 95 && g > 40 && b > 20 &&
+            max(r, max(g, b)) - min(r, min(g, b)) > 15 &&
+            (r - g).abs() > 15 && r > g && r > b)) {
+        cropped.setPixelRgba(x, y, 0, 0, 0); // Ubah jadi hitam
+      }
+    }
+  }
     img.Image resized = img.copyResize(cropped, width: 224, height: 224);
 
     Float32List input = Float32List(224 * 224 * 3);
@@ -99,33 +121,32 @@ class _NumberPageState extends State<NumberPage> {
     interpreter?.run(inputTensor, outputTensor);
 
     List<double> scores = List<double>.from(outputTensor[0]);
-    double maxScore = scores.reduce(max);
-    int labelIndex = scores.indexOf(maxScore);
+    int labelIndex = scores.indexOf(scores.reduce(max));
     String predictedLabel =
         '0123456789'[labelIndex].toUpperCase();
 
-    if (predictedLabel == _currentNumber) {
-      showResultDialog(true, 'Jawaban benar: $predictedLabel');
-    } else {
-      showResultDialog(false, 'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
-    }
+    bool isCorrect = predictedLabel == _currentNumber;
+    if (isCorrect) _score++;
+
+    showResultDialog(isCorrect, predictedLabel);
   }
 
-  void showResultDialog(bool isCorrect, String message) {
+  void showResultDialog(bool isCorrect, String predictedLabel) {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: isCorrect
-            ? Colors.green.withOpacity(0.5)
-            : Colors.red.withOpacity(0.5),
+        backgroundColor:
+            isCorrect ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 290),
-        content: SizedBox(
-          width: 100,
-          child: Center(
-            child: Text(
-              message,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 280),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isCorrect
+                  ? 'Benar! $predictedLabel'
+                  : 'Salah! Anda menjawab $predictedLabel',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -133,171 +154,114 @@ class _NumberPageState extends State<NumberPage> {
               ),
               textAlign: TextAlign.center,
             ),
-          ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _goToNextNumber();
+              },
+              child: const Text("Lanjut"),
+            )
+          ],
         ),
       ),
     );
   }
 
-  void _showNextNumber() {
-    final currentIndex = _numbers.indexOf(_currentNumber);
-    if (currentIndex < _numbers.length - 1) {
+  void _goToNextNumber() {
+    if (_currentIndex < _numbers.length - 1) {
       setState(() {
-        _currentNumber = _numbers[currentIndex + 1];
+        _currentIndex++;
       });
+    } else {
+      _showFinalScore();
     }
   }
 
-  void _showPreviousNumber() {
-    final currentIndex = _numbers.indexOf(_currentNumber);
-    if (currentIndex > 0) {
-      setState(() {
-        _currentNumber = _numbers[currentIndex - 1];
-      });
+  void _showFinalScore() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Tes Selesai"),
+        content: Text(
+          "Skor Anda: $_score / ${_numbers.length}",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _currentIndex = 0;
+                _score = 0;
+              });
+            },
+            child: const Text("Ulangi"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text("Kembali"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _switchCamera() {
+    if (_cameras.length > 1) {
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
+      _initializeCamera(_selectedCameraIndex);
     }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    interpreter?.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(
-              'Test Angka',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            centerTitle: false,
-            iconTheme: const IconThemeData(color: Colors.white),
-          ),
-        ),
+      appBar: AppBar(
+        title: Text('Test Angka', style: GoogleFonts.poppins()),
+        backgroundColor: const Color(0xFF305CDE),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cameraswitch),
+            onPressed: _switchCamera,
+          )
+        ],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color.fromARGB(255, 185, 238, 27), Color.fromARGB(255, 201, 55, 55)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 4)
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _currentNumber,
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade600,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "Soal",
-                    style: GoogleFonts.poppins(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                )
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
+            Text("Soal: $_currentNumber", style: GoogleFonts.poppins(fontSize: 24)),
+            const SizedBox(height: 16),
             _isCameraInitialized
-                ? Container(
-                    width: 350,
-                    height: 350,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.black,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      width: 320,
+                      height: 320,
                       child: CameraPreview(_controller!),
                     ),
                   )
-                : const SizedBox(
-                    width: 350,
-                    height: 350,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: 250,
-              child: ElevatedButton(
-                onPressed: takePictureAndClassify,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text(
-                  'Ambil Gambar',
-                  style: GoogleFonts.poppins(
-                      color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
+                : const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: takePictureAndClassify,
+              child: Text('Ambil Gambar', style: GoogleFonts.poppins()),
             ),
-
-            const SizedBox(height: 24),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _showPreviousNumber,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                    shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(12),
-                  ),
-                  child: const Icon(Icons.arrow_left, color: Colors.white),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _showNextNumber,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent,
-                    shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(12),
-                  ),
-                  child: const Icon(Icons.arrow_right, color: Colors.white),
-                ),
-              ],
-            )
+            const SizedBox(height: 8),
+            Text("Skor: $_score", style: GoogleFonts.poppins(fontSize: 18)),
           ],
         ),
       ),
