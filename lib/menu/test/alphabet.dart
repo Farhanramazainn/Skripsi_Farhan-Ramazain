@@ -230,7 +230,7 @@ class _AlphabetPageState extends State<AlphabetPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Abjad', style: GoogleFonts.poppins()),
+        title: Text('Test Abjad', style: GoogleFonts.poppins()),
         backgroundColor: const Color(0xFF305CDE),
         actions: [
           IconButton(
