@@ -19,7 +19,8 @@ class _NumberPageState extends State<NumberPage> {
   bool _isCameraInitialized = false;
   Interpreter? interpreter;
 
-  final List<String> _numbers = List.generate(10, (index) => index.toString());
+  final List<String> _numbers =
+      List.generate(10, (index) => String.fromCharCode(65 + index));
   String _currentNumber = '0';
 
   @override
@@ -38,6 +39,14 @@ class _NumberPageState extends State<NumberPage> {
     _controller = CameraController(backCamera, ResolutionPreset.ultraHigh);
     await _controller!.initialize();
 
+    if (_controller!.value.flashMode != FlashMode.torch) {
+      try {
+        await _controller!.setFlashMode(FlashMode.torch);
+      } catch (e) {
+        debugPrint('Flash mode error: $e');
+      }
+    }
+
     setState(() {
       _isCameraInitialized = true;
     });
@@ -46,7 +55,8 @@ class _NumberPageState extends State<NumberPage> {
   Future<void> loadModel() async {
     try {
       interpreter = await Interpreter.fromAsset(
-          'assets/model/mobilenet_v2_sibi_num.tflite');
+          'assets/model/mobilenet_v2_sibi_num.tflite'
+          );
       debugPrint('Success Load Model');
     } catch (e) {
       debugPrint("Error loading model: $e");
@@ -55,8 +65,6 @@ class _NumberPageState extends State<NumberPage> {
 
   Future<void> takePictureAndClassify() async {
     if (_controller == null || !(_controller!.value.isInitialized)) return;
-
-    await _controller!.setFlashMode(FlashMode.off);
 
     final image = await _controller!.takePicture();
     final bytes = await image.readAsBytes();
@@ -99,8 +107,7 @@ class _NumberPageState extends State<NumberPage> {
     if (predictedLabel == _currentNumber) {
       showResultDialog(true, 'Jawaban benar: $predictedLabel');
     } else {
-      showResultDialog(false,
-          'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
+      showResultDialog(false, 'Mohon ulangi, \n Jawaban Anda adalah $predictedLabel');
     }
   }
 
@@ -109,8 +116,9 @@ class _NumberPageState extends State<NumberPage> {
       context: context,
       barrierDismissible: true,
       builder: (_) => AlertDialog(
-        backgroundColor:
-            isCorrect ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+        backgroundColor: isCorrect
+            ? Colors.green.withOpacity(0.5)
+            : Colors.red.withOpacity(0.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 290),
         content: SizedBox(
@@ -190,10 +198,12 @@ class _NumberPageState extends State<NumberPage> {
                   height: 50,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFB9EE1B), Color(0xFFC93737)],
+                      colors: [Color.fromARGB(255, 185, 238, 27), Color.fromARGB(255, 201, 55, 55)],
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 4)
+                    ],
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -215,14 +225,14 @@ class _NumberPageState extends State<NumberPage> {
                   child: Text(
                     "Soal",
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 )
               ],
             ),
+
             const SizedBox(height: 24),
+
             _isCameraInitialized
                 ? Container(
                     width: 350,
@@ -237,11 +247,13 @@ class _NumberPageState extends State<NumberPage> {
                     ),
                   )
                 : const SizedBox(
-                    width: 300,
-                    height: 300,
+                    width: 350,
+                    height: 350,
                     child: Center(child: CircularProgressIndicator()),
                   ),
+
             const SizedBox(height: 12),
+
             SizedBox(
               width: 250,
               child: ElevatedButton(
@@ -250,19 +262,18 @@ class _NumberPageState extends State<NumberPage> {
                   backgroundColor: Colors.purple,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: Text(
                   'Ambil Gambar',
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
+
             const SizedBox(height: 24),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -55,7 +55,8 @@ class _AlphabetPageState extends State<AlphabetPage> {
   Future<void> loadModel() async {
     try {
       interpreter = await Interpreter.fromAsset(
-          'assets/model/mobilenet_v2_sibi_classification.tflite');
+          'assets/model/mobilenet_v2_sibi_classification.tflite'
+          );
       debugPrint('Success Load Model');
     } catch (e) {
       debugPrint("Error loading model: $e");
