@@ -46,7 +46,7 @@ class _NumberPageState extends State<NumberPage> {
   Future<void> loadModel() async {
     try {
       interpreter = await Interpreter.fromAsset(
-          'assets/model/mobilenet_v2_sibi_classification.tflite');
+          'assets/model/mobilenet_v2_sibi_num.tflite');
       debugPrint('Success Load Model');
     } catch (e) {
       debugPrint("Error loading model: $e");
@@ -94,7 +94,7 @@ class _NumberPageState extends State<NumberPage> {
     double maxScore = scores.reduce(max);
     int labelIndex = scores.indexOf(maxScore);
     String predictedLabel =
-        '0123456789abcdefghijklmnopqrstuvwxyz'[labelIndex].toUpperCase();
+        '0123456789'[labelIndex].toUpperCase();
 
     if (predictedLabel == _currentNumber) {
       showResultDialog(true, 'Jawaban benar: $predictedLabel');
