@@ -70,8 +70,9 @@ flutter:
      - assets/images/sibi_a.jpeg
      - assets/images/sibi_b.jpeg
      - assets/images/sibi_c.jpeg
-     - assets/model/mobilenet_v2_sibi_classification.tflite
+    
      - assets/model/mobilenet_v2_sibi_num.tflite
+     - assets/model/mobilenet_v2_sibi_abjad.tflite
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

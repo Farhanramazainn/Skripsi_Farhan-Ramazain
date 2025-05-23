@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -19,11 +20,15 @@ class _AlphabetPageState extends State<AlphabetPage> {
   bool _isCameraInitialized = false;
   Interpreter? interpreter;
   int _selectedCameraIndex = 0;
+  bool _isProcessing = false;
 
-  final List<String> _alphabets =
-      List.generate(26, (index) => String.fromCharCode(65 + index));
+  final List<String> _alphabets = List.generate(26, (index) => String.fromCharCode(65 + index));
   int _currentIndex = 0;
-  int _score = 0;
+  XFile? _capturedImage;
+
+  String? _predictedLabel;
+  double? _predictionAccuracy;
+  bool _isAnswered = false;
 
   String get _currentAlphabet => _alphabets[_currentIndex];
 
@@ -37,13 +42,13 @@ class _AlphabetPageState extends State<AlphabetPage> {
   Future<void> initCameras() async {
     _cameras = await availableCameras();
     if (_cameras.isNotEmpty) {
-      _initializeCamera(_selectedCameraIndex);
+      await _initializeCamera(_selectedCameraIndex);
     }
   }
 
-  Future<void> _initializeCamera(int cameraIndex) async {
+  Future<void> _initializeCamera(int index) async {
     _controller = CameraController(
-      _cameras[cameraIndex],
+      _cameras[index],
       ResolutionPreset.ultraHigh,
       enableAudio: false,
     );
@@ -61,155 +66,91 @@ class _AlphabetPageState extends State<AlphabetPage> {
 
   Future<void> loadModel() async {
     try {
-      interpreter = await Interpreter.fromAsset(
-        'assets/model/mobilenet_v2_sibi_classification.tflite',
-      );
-      debugPrint('Model loaded');
+      interpreter = await Interpreter.fromAsset('assets/model/mobilenet_v2_sibi_abjad.tflite');
+      debugPrint("Model loaded");
     } catch (e) {
-      debugPrint("Error loading model: $e");
+      debugPrint("Model loading error: $e");
     }
   }
 
-  Future<void> takePictureAndClassify() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
+  Future<void> takePicture() async {
+    if (_controller == null || !_controller!.value.isInitialized || _isProcessing || _controller!.value.isTakingPicture) return;
 
-    final image = await _controller!.takePicture();
-    final bytes = await image.readAsBytes();
-
-    img.Image? oriImage = img.decodeImage(bytes);
-    if (oriImage == null) return;
-
-    int w = oriImage.width;
-    int h = oriImage.height;
-    int cropSize = min(w, h);
-    int startX = (w - cropSize) ~/ 2;
-    int startY = (h - cropSize) ~/ 2;
-    img.Image cropped =
-        img.copyCrop(oriImage, startX, startY, cropSize, cropSize);
-      // Deteksi warna kulit (sederhana) dan blok warna lain jadi hitam
-  for (int y = 0; y < cropped.height; y++) {
-    for (int x = 0; x < cropped.width; x++) {
-      int pixel = cropped.getPixel(x, y);
-      int r = img.getRed(pixel);
-      int g = img.getGreen(pixel);
-      int b = img.getBlue(pixel);
-
-      // Range sederhana untuk warna kulit (bisa dituning)
-      if (!(r > 95 && g > 40 && b > 20 &&
-            max(r, max(g, b)) - min(r, min(g, b)) > 15 &&
-            (r - g).abs() > 15 && r > g && r > b)) {
-        cropped.setPixelRgba(x, y, 0, 0, 0); // Ubah jadi hitam
-      }
-    }
-  }
-    img.Image resized = img.copyResize(cropped, width: 224, height: 224);
-
-    Float32List input = Float32List(224 * 224 * 3);
-    int index = 0;
-    for (int y = 0; y < 224; y++) {
-      for (int x = 0; x < 224; x++) {
-        final pixel = resized.getPixel(x, y);
-        input[index++] = img.getRed(pixel) / 255.0;
-        input[index++] = img.getGreen(pixel) / 255.0;
-        input[index++] = img.getBlue(pixel) / 255.0;
-      }
-    }
-
-    var inputTensor = input.reshape([1, 224, 224, 3]);
-    var outputTensor = List.filled(1 * 36, 0.0).reshape([1, 36]);
-
-    interpreter?.run(inputTensor, outputTensor);
-
-    List<double> scores = List<double>.from(outputTensor[0]);
-    int labelIndex = scores.indexOf(scores.reduce(max));
-    String predictedLabel =
-        'abcdefghijklmnopqrstuvwxyz'[labelIndex].toUpperCase();
-
-    bool isCorrect = predictedLabel == _currentAlphabet;
-    if (isCorrect) _score++;
-
-    showResultDialog(isCorrect, predictedLabel);
-  }
-
-  void showResultDialog(bool isCorrect, String predictedLabel) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor:
-            isCorrect ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 80, vertical: 280),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isCorrect
-                  ? 'Benar! $predictedLabel'
-                  : 'Salah! Anda menjawab $predictedLabel',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _goToNextAlphabet();
-              },
-              child: const Text("Lanjut"),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _goToNextAlphabet() {
-    if (_currentIndex < _alphabets.length - 1) {
+    try {
+      final image = await _controller!.takePicture();
       setState(() {
-        _currentIndex++;
+        _capturedImage = image;
+        _predictedLabel = null;
+        _predictionAccuracy = null;
       });
-    } else {
-      _showFinalScore();
+      classifyCapturedImage();
+    } catch (e) {
+      debugPrint("Take picture error: $e");
     }
   }
 
-  void _showFinalScore() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Tes Selesai"),
-        content: Text(
-          "Skor Anda: $_score / ${_alphabets.length}",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _currentIndex = 0;
-                _score = 0;
-              });
-            },
-            child: const Text("Ulangi"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text("Kembali"),
-          ),
-        ],
-      ),
-    );
+  Future<void> classifyCapturedImage() async {
+    if (_capturedImage == null || interpreter == null) return;
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final bytes = await _capturedImage!.readAsBytes();
+      img.Image? oriImage = img.decodeImage(bytes);
+      if (oriImage == null) return;
+
+      int w = oriImage.width;
+      int h = oriImage.height;
+      int cropSize = min(w, h);
+      img.Image cropped = img.copyCrop(oriImage, (w - cropSize) ~/ 2, (h - cropSize) ~/ 2, cropSize, cropSize);
+
+      // Optional skin filtering (bisa disesuaikan atau dihapus jika tidak diperlukan)
+      for (int y = 0; y < cropped.height; y++) {
+        for (int x = 0; x < cropped.width; x++) {
+          int pixel = cropped.getPixel(x, y);
+          int r = img.getRed(pixel), g = img.getGreen(pixel), b = img.getBlue(pixel);
+          if (!(r > 95 && g > 40 && b > 20 &&
+              max(r, max(g, b)) - min(r, min(g, b)) > 15 &&
+              (r - g).abs() > 15 && r > g && r > b)) {
+            cropped.setPixelRgba(x, y, 0, 0, 0);
+          }
+        }
+      }
+
+      img.Image resized = img.copyResize(cropped, width: 224, height: 224);
+      Float32List input = Float32List(224 * 224 * 3);
+      int index = 0;
+
+      for (int y = 0; y < 224; y++) {
+        for (int x = 0; x < 224; x++) {
+          final p = resized.getPixel(x, y);
+          input[index++] = img.getRed(p) / 255.0;
+          input[index++] = img.getGreen(p) / 255.0;
+          input[index++] = img.getBlue(p) / 255.0;
+        }
+      }
+
+      var inputTensor = input.reshape([1, 224, 224, 3]);
+      var outputTensor = List.filled(26, 0.0).reshape([1, 26]); // <--- untuk A-Z
+      interpreter?.run(inputTensor, outputTensor);
+
+      List<double> scores = List<double>.from(outputTensor[0]);
+      int labelIndex = scores.indexOf(scores.reduce(max));
+
+      setState(() {
+        _predictedLabel = String.fromCharCode(65 + labelIndex); // 65 = 'A'
+        _predictionAccuracy = scores[labelIndex];
+        _isAnswered = true;
+        _isProcessing = false;
+      });
+    } catch (e) {
+      debugPrint("Classification error: $e");
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
 
   void _switchCamera() {
@@ -217,6 +158,16 @@ class _AlphabetPageState extends State<AlphabetPage> {
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
       _initializeCamera(_selectedCameraIndex);
     }
+  }
+
+  void _nextQuestion() {
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % _alphabets.length;
+      _capturedImage = null;
+      _predictedLabel = null;
+      _predictionAccuracy = null;
+      _isAnswered = false;
+    });
   }
 
   @override
@@ -230,39 +181,96 @@ class _AlphabetPageState extends State<AlphabetPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Test Abjad', style: GoogleFonts.poppins()),
+        title: Text('Tes Abjad', style: GoogleFonts.poppins()),
         backgroundColor: const Color(0xFF305CDE),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cameraswitch),
-            onPressed: _switchCamera,
-          )
+          IconButton(icon: const Icon(Icons.cameraswitch), onPressed: _switchCamera),
         ],
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Soal: $_currentAlphabet", style: GoogleFonts.poppins(fontSize: 24)),
-            const SizedBox(height: 16),
-            _isCameraInitialized
-                ? ClipRRect(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Soal: $_currentAlphabet", style: GoogleFonts.poppins(fontSize: 24)),
+              const SizedBox(height: 16),
+              if (_capturedImage != null)
+                Container(
+                  width: 320,
+                  height: 320,
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    child: SizedBox(
-                      width: 320,
-                      height: 320,
-                      child: CameraPreview(_controller!),
+                    image: DecorationImage(
+                      image: FileImage(File(_capturedImage!.path)),
+                      fit: BoxFit.cover,
                     ),
-                  )
-                : const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: takePictureAndClassify,
-              child: Text('Ambil Gambar', style: GoogleFonts.poppins()),
-            ),
-            const SizedBox(height: 8),
-            Text("Skor: $_score", style: GoogleFonts.poppins(fontSize: 18)),
-          ],
+                  ),
+                )
+              else if (_isCameraInitialized)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(width: 320, height: 320, child: CameraPreview(_controller!)),
+                )
+              else
+                const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              if (!_isAnswered)
+                ElevatedButton(
+                  onPressed: _isProcessing ? null : takePicture,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF305CDE),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: _isProcessing
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('Ambil Gambar', style: GoogleFonts.poppins(color: Colors.white)),
+                ),
+              const SizedBox(height: 12),
+              if (_predictedLabel != null && _predictionAccuracy != null)
+                Column(
+                  children: [
+                    Text("Prediksi: $_predictedLabel", style: GoogleFonts.poppins(fontSize: 20)),
+                    Text("Akurasi: ${(_predictionAccuracy! * 100).toStringAsFixed(2)}%",
+                        style: GoogleFonts.poppins(fontSize: 18, color: Colors.grey[700])),
+                    const SizedBox(height: 8),
+                    if (_predictedLabel == _currentAlphabet)
+                      Text("Jawaban Benar!", style: GoogleFonts.poppins(fontSize: 18, color: Colors.green))
+                    else
+                      Text("Jawaban Salah", style: GoogleFonts.poppins(fontSize: 18, color: Colors.red)),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _nextQuestion,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          child: Text('Lanjut Soal', style: GoogleFonts.poppins(color: Colors.white)),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _capturedImage = null;
+                              _predictedLabel = null;
+                              _predictionAccuracy = null;
+                              _isAnswered = false;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[700],
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          child: Text('Ambil Ulang Gambar', style: GoogleFonts.poppins(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
