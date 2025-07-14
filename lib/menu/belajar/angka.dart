@@ -12,168 +12,240 @@ class AngkaPage extends StatefulWidget {
 class _AngkaPageState extends State<AngkaPage> {
   int currentIndex = 0;
 
-  final List<Map<String, String>> abjadList = [
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': '0'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': '1'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': '2'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': '3'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': '4'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': '5'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': '6'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': '7'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': '8'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': '9'},
-  ];
+  // Otomatis generate angka 0-9 dengan gambar sibi_0.jpeg - sibi_9.jpeg
+  final List<Map<String, String>> angkaList = List.generate(10, (index) {
+    return {
+      'image': 'assets/images/sibi_$index.jpeg',
+      'letter': index.toString(),
+    };
+  });
 
   void _next() {
-    setState(() {
-      currentIndex = (currentIndex + 1) % abjadList.length;
-    });
+    if (currentIndex < angkaList.length - 1) {
+      setState(() {
+        currentIndex++;
+      });
+    }
   }
 
   void _previous() {
-    setState(() {
-      currentIndex = (currentIndex - 1 + abjadList.length) % abjadList.length;
-    });
+    if (currentIndex > 0) {
+      setState(() {
+        currentIndex--;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final current = abjadList[currentIndex];
+    final current = angkaList[currentIndex];
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomePage()),
+            );
+          },
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4299E1), Color(0xFF3182CE)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+        ),
+        title: Text(
+          'Belajar Angka',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF1E88E5),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${currentIndex + 1}/${angkaList.length}',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF1E88E5),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // Header gradasi + back button
+          // Progress bar
           Container(
-            width: double.infinity,
-            height: 60,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF305CDE),
-                  Color(0xFF64A8F0),
-                ],
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            height: 3,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: (currentIndex + 1) / angkaList.length,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 60),
+
+          // Angka
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(1),
-                bottomRight: Radius.circular(1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Text(
+                current['letter']!,
+                style: GoogleFonts.poppins(
+                  fontSize: 44,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
-            padding: const EdgeInsets.only(left: 1, top: 10),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                    );
-                  },
+          ),
+
+          const SizedBox(height: 80),
+
+          // Gambar
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFE3F2FD),
+                  width: 1,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Belajar Angka',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Image.asset(
+                    current['image']!,
+                    fit: BoxFit.contain,
                   ),
                 ),
-              ],
+              ),
             ),
           ),
 
           const SizedBox(height: 40),
 
-          // Letter
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 40),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-              border: Border.all(color: Colors.white, width: 4),
-            ),
-            child: Text(
-              current['letter']!,
-              style: GoogleFonts.poppins(
-                fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFF7B7B),
-                 ),
-              ),
-          ),
-           const SizedBox(height: 40),
-          // Kotak gambar
-          Container(
-            height: 250,
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(color: Colors.white, width: 4),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                current['image']!,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          // Tombol panah
+          // Navigasi
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _roundedBoxButton(Icons.arrow_back_ios_rounded, _previous),
-              const SizedBox(width: 16),
-              _roundedBoxButton(Icons.arrow_forward_ios_rounded, _next),
+              _navButton(
+                icon: Icons.chevron_left,
+                onPressed: currentIndex > 0 ? _previous : null,
+              ),
+              
+              // Dots
+              Row(
+                children: List.generate(
+                  angkaList.length > 5 ? 5 : angkaList.length,
+                  (index) {
+                    int dotIndex = currentIndex < 3 
+                        ? index 
+                        : currentIndex > angkaList.length - 3 
+                            ? angkaList.length - 5 + index
+                            : currentIndex - 2 + index;
+                    
+                    return Container(
+                      width: dotIndex == currentIndex ? 12 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: dotIndex == currentIndex 
+                            ? const Color(0xFF1E88E5)
+                            : const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              
+              _navButton(
+                icon: Icons.chevron_right,
+                onPressed: currentIndex < angkaList.length - 1 ? _next : null,
+              ),
             ],
           ),
+
+          const SizedBox(height: 50),
         ],
       ),
     );
   }
 
-  // Tombol panah dalam kotak melengkung
-  Widget _roundedBoxButton(IconData icon, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF7B7B),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white),
-        onPressed: onPressed,
+  Widget _navButton({
+    required IconData icon,
+    VoidCallback? onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: onPressed != null
+              ? const LinearGradient(
+                  colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
+                )
+              : LinearGradient(
+                  colors: [Colors.grey.shade200, Colors.grey.shade300],
+                ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          color: onPressed != null ? Colors.white : Colors.grey.shade400,
+          size: 20,
+        ),
       ),
     );
   }

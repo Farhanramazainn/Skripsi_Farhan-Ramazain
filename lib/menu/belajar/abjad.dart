@@ -12,45 +12,29 @@ class AbjadPage extends StatefulWidget {
 class _AbjadPageState extends State<AbjadPage> {
   int currentIndex = 0;
 
-  final List<Map<String, String>> abjadList = [
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'A'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'B'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'C'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'D'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'E'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'F'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'G'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'H'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'I'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'J'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'K'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'L'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'M'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'N'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'O'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'P'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'Q'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'R'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'S'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'T'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'U'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'V'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'W'},
-    {'image': 'assets/images/sibi_c.jpeg', 'letter': 'X'},
-    {'image': 'assets/images/sibi_a.jpeg', 'letter': 'Y'},
-    {'image': 'assets/images/sibi_b.jpeg', 'letter': 'Z'},
-  ];
+  // Otomatis generate huruf A-Z dan gambar sibi_a.jpeg - sibi_z.jpeg
+  final List<Map<String, String>> abjadList = List.generate(26, (index) {
+    String letter = String.fromCharCode('A'.codeUnitAt(0) + index);
+    return {
+      'image': 'assets/images/sibi_${letter.toLowerCase()}.jpeg',
+      'letter': letter,
+    };
+  });
 
   void _next() {
-    setState(() {
-      currentIndex = (currentIndex + 1) % abjadList.length;
-    });
+    if (currentIndex < abjadList.length - 1) {
+      setState(() {
+        currentIndex++;
+      });
+    }
   }
 
   void _previous() {
-    setState(() {
-      currentIndex = (currentIndex - 1 + abjadList.length) % abjadList.length;
-    });
+    if (currentIndex > 0) {
+      setState(() {
+        currentIndex--;
+      });
+    }
   }
 
   @override
@@ -59,133 +43,210 @@ class _AbjadPageState extends State<AbjadPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomePage()),
+            );
+          },
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4299E1), Color(0xFF3182CE)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+        ),
+        title: Text(
+          'Belajar Abjad',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF1E88E5),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${currentIndex + 1}/${abjadList.length}',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF1E88E5),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // Header dengan gradasi dan tombol back
+          // Progress bar
           Container(
-            width: double.infinity,
-            height: 60,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(1)),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            height: 3,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.circular(2),
             ),
-            padding: const EdgeInsets.only(left: 1, top: 10),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Belajar Abjad',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: (currentIndex + 1) / abjadList.length,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
                   ),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              ],
+              ),
             ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 60),
 
           // Huruf abjad
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 40),
-            margin: const EdgeInsets.only(bottom: 16),
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.1),
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                ),
-              ],
-              border: Border.all(color: Colors.white, width: 4),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              current['letter']!,
-              style: GoogleFonts.poppins(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFFFC567),
+            child: Center(
+              child: Text(
+                current['letter']!,
+                style: GoogleFonts.poppins(
+                  fontSize: 44,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 80),
+
+          // Gambar
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFE3F2FD),
+                  width: 1,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Image.asset(
+                    current['image']!,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             ),
           ),
 
           const SizedBox(height: 40),
 
-          // Gambar abjad
-          Container(
-            height: 250,
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(128, 128, 128, 0.3),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-              border: Border.all(color: Colors.white, width: 4),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                current['image']!,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          // Navigasi panah kiri-kanan
+          // Navigasi
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _roundedBoxButton(Icons.arrow_back_ios_rounded, _previous),
-              const SizedBox(width: 16),
-              _roundedBoxButton(Icons.arrow_forward_ios_rounded, _next),
+              _navButton(
+                icon: Icons.chevron_left,
+                onPressed: currentIndex > 0 ? _previous : null,
+              ),
+              
+              // Dots
+              Row(
+                children: List.generate(
+                  abjadList.length > 5 ? 5 : abjadList.length,
+                  (index) {
+                    int dotIndex = currentIndex < 3 
+                        ? index 
+                        : currentIndex > abjadList.length - 3 
+                            ? abjadList.length - 5 + index
+                            : currentIndex - 2 + index;
+                    
+                    return Container(
+                      width: dotIndex == currentIndex ? 12 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: dotIndex == currentIndex 
+                            ? const Color(0xFF1E88E5)
+                            : const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              
+              _navButton(
+                icon: Icons.chevron_right,
+                onPressed: currentIndex < abjadList.length - 1 ? _next : null,
+              ),
             ],
           ),
+
+          const SizedBox(height: 50),
         ],
       ),
     );
   }
 
-  // Tombol panah dengan box melengkung dan bayangan
-  Widget _roundedBoxButton(IconData icon, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFC567),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.1),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white),
-        onPressed: onPressed,
+  Widget _navButton({
+    required IconData icon,
+    VoidCallback? onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: onPressed != null
+              ? const LinearGradient(
+                  colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
+                )
+              : LinearGradient(
+                  colors: [Colors.grey.shade200, Colors.grey.shade300],
+                ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          color: onPressed != null ? Colors.white : Colors.grey.shade400,
+          size: 20,
+        ),
       ),
     );
   }

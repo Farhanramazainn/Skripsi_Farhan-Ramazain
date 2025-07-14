@@ -1,204 +1,330 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// Import halaman untuk navigasi
 import 'package:aplikasi_sibisa/menu/belajar/abjad.dart';
 import 'package:aplikasi_sibisa/menu/belajar/angka.dart';
 import 'package:aplikasi_sibisa/menu/test/alphabet.dart';
 import 'package:aplikasi_sibisa/menu/test/number.dart';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'info.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const InfoPage()),
-            );
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedFontSize: 0,
-        unselectedFontSize: 0,
-        backgroundColor: Colors.white,
-        elevation: 10,
-        items: [
-          _buildNavItem(icon: Icons.house_rounded, label: 'Home', isSelected: _selectedIndex == 0),
-          _buildNavItem(icon: Icons.info_outline_rounded, label: 'Info', isSelected: _selectedIndex == 1),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              width: double.infinity,
-              height: 250,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 100),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hello,',
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                color: Color.fromRGBO(255, 255, 255, 0.8),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Yuk Belajar Bahasa Isyarat SIBI!',
-                              style: GoogleFonts.poppins(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 40),
-                      child: Image.asset(
-                        'assets/images/Icon.png',
-                        width: 70,
-                        height: 70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Learning Section
-            const Padding(
-              padding: EdgeInsets.only(right: 240, top: 20),
-              child: Text(
-                "Learning",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.only(right: 0, top: 5),
-              child: Text(
-                "Belajar bahasa isyarat SIBI abjad dan angka",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black45,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _horizontalMenuSection(context, isTest: false),
-            const SizedBox(height: 24),
-
-            // Test Section
-            const Padding(
-              padding: EdgeInsets.only(right: 280, top: 20),
-              child: Text(
-                "Test",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.only(right: 100, top: 5),
-              child: Text(
-                "Test kemampuan gerakan SIBI",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black45,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _horizontalMenuSection(context, isTest: true),
-            const SizedBox(height: 24),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Belajar', icon: Icons.school_rounded),
+              const SizedBox(height: 20),
+              _buildLearningSection(context),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Test Kemampuan', icon: Icons.quiz_rounded),
+              const SizedBox(height: 20),
+              _buildTestSection(context),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  BottomNavigationBarItem _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-  }) {
-    return BottomNavigationBarItem(
-      label: '',
-      icon: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: isSelected
-            ? BoxDecoration(
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4299E1), Color(0xFF3182CE)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4299E1).withOpacity(0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selamat Datang',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Belajar Bahasa\nIsyarat SIBI',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/info');
+            },
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Image.asset(
+                'assets/images/Icon.png',
+                width: 55,
+                height: 55,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, {IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF305CDE), Color(0xFF64A8F0)],
+                  colors: [Color(0xFF4299E1), Color(0xFF3182CE)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLearningSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildCleanCard(
+              context,
+              title: 'Abjad',
+              subtitle: 'A - Z',
+              primaryColor: const Color(0xFF63B3ED),
+              secondaryColor: const Color(0xFF4299E1),
+              icon: 'assets/images/a.png',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AbjadPage()),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _buildCleanCard(
+              context,
+              title: 'Angka',
+              subtitle: '0 - 9',
+              primaryColor: const Color(0xFF90CDF4),
+              secondaryColor: const Color(0xFF63B3ED),
+              icon: 'assets/images/1.png',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AngkaPage()),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTestSection(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          _buildRectangleCard(
+            context,
+            title: 'Test Abjad',
+            subtitle: 'Uji kemampuan huruf A - Z',
+            primaryColor: const Color(0xFF3182CE),
+            secondaryColor: const Color(0xFF2B6CB0),
+            icon: 'assets/images/a.png',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AlphabetPage()),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildRectangleCard(
+            context,
+            title: 'Test Angka',
+            subtitle: 'Uji kemampuan angka 0 - 9',
+            primaryColor: const Color(0xFF4299E1),
+            secondaryColor: const Color(0xFF3182CE),
+            icon: 'assets/images/1.png',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NumberPage()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRectangleCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required Color primaryColor,
+    required Color secondaryColor,
+    required String icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.grey.withOpacity(0.08),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryColor.withOpacity(0.1),
+                    secondaryColor.withOpacity(0.05)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
-              )
-            : null,
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.grey,
+              ),
+              child: Image.asset(
+                icon,
+                width: 40,
+                height: 40,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.grey,
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2D3748),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryColor, secondaryColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Mulai',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ],
               ),
             ),
           ],
@@ -207,129 +333,112 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _horizontalMenuSection(BuildContext context, {required bool isTest}) {
-    double screenWidth = MediaQuery.of(context).size.width;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        height: isTest ? 160 : 140,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            _buildMenuCard(
-              title: 'Abjad',
-              subtitle: 'Sign',
-              color: isTest ? const Color(0xFFFF86E0) : const Color(0xFFFFC567),
-              iconPath: 'assets/images/a.png',
-              context: context,
-              screenWidth: screenWidth,
-              isTest: isTest,
-            ),
-            const SizedBox(width: 16),
-            _buildMenuCard(
-              title: 'Angka',
-              subtitle: 'Sign',
-              color: isTest ? const Color(0xFF6EE9BE) : const Color(0xFFFF7B7B),
-              iconPath: 'assets/images/1.png',
-              context: context,
-              screenWidth: screenWidth,
-              isTest: isTest,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuCard({
+  Widget _buildCleanCard(
+    BuildContext context, {
     required String title,
     required String subtitle,
-    required Color color,
-    required String iconPath,
-    required BuildContext context,
-    required double screenWidth,
-    bool isTest = false,
+    required Color primaryColor,
+    required Color secondaryColor,
+    required String icon,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: () {
-        if (!isTest) {
-          if (title == 'Abjad') {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AbjadPage()));
-          } else if (title == 'Angka') {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AngkaPage()));
-          }
-        }
-      },
+      onTap: onTap,
       child: Container(
-        width: isTest ? screenWidth * 0.7 : screenWidth * 0.45,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.grey.withOpacity(0.08),
+            width: 1,
+          ),
         ),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: const Color.fromRGBO(255, 255, 255, 0.1),
-                  shape: BoxShape.circle,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryColor.withOpacity(0.1),
+                    secondaryColor.withOpacity(0.05)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Image.asset(
+                icon,
+                width: 32,
+                height: 32,
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF2D3748),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryColor, secondaryColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    color: const Color.fromRGBO(255, 255, 255, 0.85),
-                    fontSize: 14,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const Spacer(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (isTest)
-                      ElevatedButton(
-                        onPressed: () {
-                          if (title == 'Abjad') {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const AlphabetPage()));
-                          } else if (title == 'Angka') {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const NumberPage()));
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Start'),
-                      ),
-                    Image.asset(
-                      iconPath,
-                      height: screenWidth * 0.15,
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Mulai',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

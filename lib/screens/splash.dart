@@ -29,10 +29,9 @@ class _SplashPageState extends State<SplashPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image
-          Image.asset(
-            'assets/images/background.png',
-            fit: BoxFit.cover,
+          // Background putih polos
+          Container(
+            color: Colors.white,
           ),
 
           // Logo di tengah
